@@ -23,6 +23,9 @@ TOOLS     += $(TOOLS-yes)
 TOOLOBJS  := $(TOOLS:%=tools/%.o)
 TOOLS     := $(TOOLS:%=tools/%$(EXESUF))
 
+TUTORIALOB:= $(TUTORIAL:%=tutorial/%.o)
+TUTORIAL  := $(TUTORIAL:%=tutorial/%$(EXESUF))
+
 DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME))
 
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/$(ARCH)/*.h))
@@ -42,6 +45,7 @@ $(OBJS):     | $(sort $(dir $(OBJS)))
 $(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
 $(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
 $(TOOLOBJS): | tools
+%(TUTORIALOB=: | tutorial
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS))
 
@@ -49,4 +53,4 @@ CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
 
--include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d))
+-include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d) $(TUTORIALOB:.o=.d))

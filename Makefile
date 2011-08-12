@@ -64,6 +64,8 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
+TUTORIAL    = new
+
 BASENAMES   = ffmpeg avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
@@ -93,6 +95,9 @@ $(TOOLS): %$(EXESUF): %.o
 
 tools/cws2fws$(EXESUF): ELIBS = -lz
 
+$(TUTORIAL): %$(EXESUF): %.o
+	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
+
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
 	@-tput bold 2>/dev/null
@@ -101,7 +106,8 @@ config.h: .config
 
 SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTPROGS EXAMPLES SKIPHEADERS \
                ALTIVEC-OBJS MMX-OBJS NEON-OBJS X86-OBJS YASM-OBJS-FFT YASM-OBJS \
-               HOSTPROGS BUILT_HEADERS TESTOBJS ARCH_HEADERS ARMV6-OBJS TOOLS
+               HOSTPROGS BUILT_HEADERS TESTOBJS ARCH_HEADERS ARMV6-OBJS TOOLS \
+               TUTORIAL
 
 define RESET
 $(1) :=
@@ -126,6 +132,10 @@ $(PROGS): %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 OBJDIRS += tools
 
 -include $(wildcard tools/*.d)
+
+OBJDIRS += tutorial
+
+-include $(wildcard tutorial/*.d)
 
 VERSION_SH  = $(SRC_PATH)/version.sh
 GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
