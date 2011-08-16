@@ -64,7 +64,7 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
-TUTORIAL    = new
+TUTORIAL    = new packet-inspection
 
 BASENAMES   = ffmpeg avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
