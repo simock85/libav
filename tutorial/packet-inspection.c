@@ -27,7 +27,6 @@
 #include "config.h"
 
 #include "libavformat/avformat.h"
-#include "cmdutils.h"
 #include "libavutil/dict.h"
 #include "libavcodec/avcodec.h"
 
@@ -118,7 +117,7 @@ static const char *media_type_string(enum AVMediaType media_type)
 static void show_usage(void)
 {
     printf("Super Simple multimedia streams prober\n");
-    printf("usage: %s [INPUT_FILE]\n", program_name);
+    printf("usage: packet-inspection [INPUT_FILE]\n");
     printf("\n");
 }
 
@@ -128,7 +127,7 @@ static int open_input_file(AVFormatContext *fmt_ctx, const char *filename, AVInp
     AVDictionaryEntry *t;
 
     if ((err = avformat_open_input(&fmt_ctx, filename, fmt, &options)) < 0) {
-        print_error(filename, err);
+        printf("error");
         return err;
     }
     if ((t = av_dict_get(options, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
@@ -139,7 +138,7 @@ static int open_input_file(AVFormatContext *fmt_ctx, const char *filename, AVInp
 
     /* fill the streams in the format context */
     if ((err = av_find_stream_info(fmt_ctx)) < 0) {
-        print_error(filename, err);
+        printf("error");
         return err;
     }
 
@@ -202,12 +201,13 @@ int main(int argc, char **argv)
 
     av_register_all();
 
+    fmt_ctx = malloc(sizeof(AVFormatContext));
+
     if ((ret = open_input_file(fmt_ctx, argv[1], iformat, format_opts)))
         return ret;
 
     show_packets(fmt_ctx);
 
-    show_banner();
     if (argc != 2){
         show_usage();
     }

@@ -64,7 +64,7 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
-TUTORIAL    = new packet-inspection
+TUTORIAL    = new packet-inspection simple-packet-inspection
 
 BASENAMES   = ffmpeg avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
@@ -94,6 +94,9 @@ $(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = -lz
+tutorial/packet-inspection$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz
+
+tutorial/simple-packet-inspection$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz
 
 $(TUTORIAL): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
