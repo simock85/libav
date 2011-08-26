@@ -513,7 +513,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
             av_opt_set_defaults(avctx->priv_data);
         }
       }
-      if (codec->priv_class && (ret = av_opt_set_dict(avctx->priv_data, &tmp) < 0))
+      if (codec->priv_class && (ret = av_opt_set_dict(avctx->priv_data, &tmp)) < 0)
           goto free_and_end;
     } else {
         avctx->priv_data = NULL;
@@ -1065,6 +1065,9 @@ const char *avcodec_license(void)
     return LICENSE_PREFIX LIBAV_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
+#if !FF_API_AVCODEC_INIT
+static
+#endif
 void avcodec_init(void)
 {
     static int initialized = 0;
@@ -1298,3 +1301,17 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count)
     return ff_thread_init(s);
 }
 #endif
+
+enum AVMediaType avcodec_get_type(enum CodecID codec_id)
+{
+    if (codec_id <= CODEC_ID_NONE)
+        return AVMEDIA_TYPE_UNKNOWN;
+    else if (codec_id < CODEC_ID_FIRST_AUDIO)
+        return AVMEDIA_TYPE_VIDEO;
+    else if (codec_id < CODEC_ID_FIRST_SUBTITLE)
+        return AVMEDIA_TYPE_AUDIO;
+    else if (codec_id < CODEC_ID_FIRST_UNKNOWN)
+        return AVMEDIA_TYPE_SUBTITLE;
+
+    return AVMEDIA_TYPE_UNKNOWN;
+}

@@ -259,6 +259,8 @@ library:
     @tab Multimedia format used in Westwood Studios games.
 @item Westwood Studios VQA      @tab   @tab X
     @tab Multimedia format used in Westwood Studios games.
+@item XMV                       @tab   @tab X
+    @tab Microsoft video container used in Xbox games.
 @item xWMA                      @tab   @tab X
     @tab Microsoft audio container used by XAudio 2.
 @item YUV4MPEG pipe             @tab X @tab X
@@ -516,6 +518,7 @@ following image formats are supported:
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.
 @item Westwood Studios VQA (Vector Quantized Animation) video  @tab     @tab  X
+@item Windows Media Image    @tab     @tab  X
 @item Windows Media Video 7  @tab  X  @tab  X
 @item Windows Media Video 8  @tab  X  @tab  X
 @item Windows Media Video 9  @tab     @tab  X

@@ -26,7 +26,7 @@ IFLAGS     := -I. -I$(SRC_PATH)
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CFLAGS)
-YASMFLAGS  += $(IFLAGS) -Pconfig.asm
+YASMFLAGS  += $(IFLAGS) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
 HOSTCFLAGS += $(IFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
@@ -53,6 +53,7 @@ COMPILE_S = $(call COMPILE,AS)
 %.c %.h: TAG = GEN
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
+PROGS-$(CONFIG_AVCONV)   += avconv
 PROGS-$(CONFIG_AVPLAY)   += avplay
 PROGS-$(CONFIG_AVPROBE)  += avprobe
 PROGS-$(CONFIG_AVSERVER) += avserver
@@ -63,10 +64,8 @@ TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
-
 TUTORIAL    = new packet-inspection simple-packet-inspection
-
-BASENAMES   = ffmpeg avplay avprobe avserver
+BASENAMES   = ffmpeg avconv avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
 

@@ -208,8 +208,11 @@ enum CodecID {
     CODEC_ID_PRORES,
     CODEC_ID_JV,
     CODEC_ID_DFA,
+    CODEC_ID_WMV3IMAGE,
+    CODEC_ID_VC1IMAGE,
 
     /* various PCM "codecs" */
+    CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
     CODEC_ID_PCM_S16LE= 0x10000,
     CODEC_ID_PCM_S16BE,
     CODEC_ID_PCM_U16LE,
@@ -340,6 +343,7 @@ enum CodecID {
     CODEC_ID_QDMC,
 
     /* subtitle codecs */
+    CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
     CODEC_ID_DVD_SUBTITLE= 0x17000,
     CODEC_ID_DVB_SUBTITLE,
     CODEC_ID_TEXT,  ///< raw UTF-8 text
@@ -351,6 +355,7 @@ enum CodecID {
     CODEC_ID_SRT,
 
     /* other specific kind of codecs (generally used for attachments) */
+    CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
     CODEC_ID_TTF= 0x18000,
 
     CODEC_ID_PROBE= 0x19000, ///< codec_id is not known (like CODEC_ID_NONE) but lavf should attempt to identify it
@@ -2372,19 +2377,23 @@ typedef struct AVCodecContext {
      */
     int brd_scale;
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * constant rate factor - quality-based VBR - values ~correspond to qps
      * - encoding: Set by user.
      * - decoding: unused
+     *   @deprecated use 'crf' libx264 private option
      */
-    float crf;
+    attribute_deprecated float crf;
 
     /**
      * constant quantization parameter rate control method
      * - encoding: Set by user.
      * - decoding: unused
+     *   @deprecated use 'cqp' libx264 private option
      */
-    int cqp;
+    attribute_deprecated int cqp;
+#endif
 
     /**
      * minimum GOP size
@@ -2587,7 +2596,6 @@ typedef struct AVCodecContext {
 
     /**
      * Bits per sample/pixel of internal libavcodec pixel/sample format.
-     * This field is applicable only when sample_fmt is AV_SAMPLE_FMT_S32.
      * - encoding: set by user.
      * - decoding: set by libavcodec.
      */
@@ -2704,6 +2712,7 @@ typedef struct AVCodecContext {
      */
     int (*execute2)(struct AVCodecContext *c, int (*func)(struct AVCodecContext *c2, void *arg, int jobnr, int threadnr), void *arg2, int *ret, int count);
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * explicit P-frame weighted prediction analysis method
      * 0: off
@@ -2712,7 +2721,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int weighted_p_pred;
+    attribute_deprecated int weighted_p_pred;
 
     /**
      * AQ mode
@@ -2722,7 +2731,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    int aq_mode;
+    attribute_deprecated int aq_mode;
 
     /**
      * AQ strength
@@ -2730,7 +2739,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    float aq_strength;
+    attribute_deprecated float aq_strength;
 
     /**
      * PSY RD
@@ -2738,7 +2747,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    float psy_rd;
+    attribute_deprecated float psy_rd;
 
     /**
      * PSY trellis
@@ -2746,7 +2755,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    float psy_trellis;
+    attribute_deprecated float psy_trellis;
 
     /**
      * RC lookahead
@@ -2754,7 +2763,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    int rc_lookahead;
+    attribute_deprecated int rc_lookahead;
 
     /**
      * Constant rate factor maximum
@@ -2763,7 +2772,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: unused
      */
-    float crf_max;
+    attribute_deprecated float crf_max;
+#endif
 
     int log_level_offset;
 
@@ -3482,21 +3492,22 @@ const char *avcodec_configuration(void);
  */
 const char *avcodec_license(void);
 
+#if FF_API_AVCODEC_INIT
 /**
- * Initialize libavcodec.
- * If called more than once, does nothing.
- *
- * @warning This function must be called before any other libavcodec
- * function.
- *
- * @warning This function is not thread-safe.
+ * @deprecated this function is called automatically from avcodec_register()
+ * and avcodec_register_all(), there is no need to call it manually
  */
+attribute_deprecated
 void avcodec_init(void);
+#endif
 
 /**
  * Register the codec codec and initialize libavcodec.
  *
- * @see avcodec_init(), avcodec_register_all()
+ * @warning either this function or avcodec_register_all() must be called
+ * before any other libavcodec functions.
+ *
+ * @see avcodec_register_all()
  */
 void avcodec_register(AVCodec *codec);
 
@@ -4272,5 +4283,10 @@ enum AVLockOp {
  *           lockmgr callback may also be invoked.
  */
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
+
+/**
+ * Get the type of the given codec.
+ */
+enum AVMediaType avcodec_get_type(enum CodecID codec_id);
 
 #endif /* AVCODEC_AVCODEC_H */

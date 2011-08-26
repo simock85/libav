@@ -314,9 +314,6 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
                    "Old interlaced mode is not supported\n");
             return -1;
         }
-        if (v->res_sprite) {
-            av_log(avctx, AV_LOG_ERROR, "WMVP is not fully supported\n");
-        }
     }
 
     // (fps-2)/4 (->30)
@@ -485,8 +482,8 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
         if(ar && ar < 14){
             v->s.avctx->sample_aspect_ratio = ff_vc1_pixel_aspect[ar];
         }else if(ar == 15){
-            w = get_bits(gb, 8);
-            h = get_bits(gb, 8);
+            w = get_bits(gb, 8) + 1;
+            h = get_bits(gb, 8) + 1;
             v->s.avctx->sample_aspect_ratio = (AVRational){w, h};
         }
         av_log(v->s.avctx, AV_LOG_DEBUG, "Aspect: %i:%i\n", v->s.avctx->sample_aspect_ratio.num, v->s.avctx->sample_aspect_ratio.den);
@@ -503,6 +500,10 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
                     v->s.avctx->time_base.num = ff_vc1_fps_dr[dr - 1];
                     v->s.avctx->time_base.den = ff_vc1_fps_nr[nr - 1] * 1000;
                 }
+            }
+            if(v->broadcast) { // Pulldown may be present
+                v->s.avctx->time_base.den *= 2;
+                v->s.avctx->ticks_per_frame = 2;
             }
         }
 
@@ -821,7 +822,7 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     case 4:
         v->s.pict_type = AV_PICTURE_TYPE_P; // skipped pic
         v->p_frame_skipped = 1;
-        return 0;
+        break;
     }
     if(v->tfcntrflag)
         skip_bits(gb, 8);
@@ -830,12 +831,15 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->rptfrm = get_bits(gb, 2);
         } else {
             v->tff = get_bits1(gb);
-            v->rptfrm = get_bits1(gb);
+            v->rff = get_bits1(gb);
         }
     }
     if(v->panscanflag) {
         av_log_missing_feature(v->s.avctx, "Pan-scan", 0);
         //...
+    }
+    if(v->p_frame_skipped) {
+        return 0;
     }
     v->rnd = get_bits1(gb);
     if(v->interlace)

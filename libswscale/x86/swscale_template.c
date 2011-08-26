@@ -2316,9 +2316,9 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 
-    if (c->scalingBpp == 8) {
+    if (c->srcBpc == 8 && c->dstBpc <= 10) {
 #if !COMPILE_TEMPLATE_MMX2
-    c->hScale       = RENAME(hScale      );
+    c->hyScale = c->hcScale = RENAME(hScale      );
 #endif /* !COMPILE_TEMPLATE_MMX2 */
 
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).

@@ -126,17 +126,12 @@ static inline float calc_cpl_coord(float energy_ch, float energy_cpl)
     float coord = 0.125;
     if (energy_cpl > 0)
         coord *= sqrtf(energy_ch / energy_cpl);
-    return coord;
+    return FFMIN(coord, COEF_MAX);
 }
 
 
 /**
  * Calculate coupling channel and coupling coordinates.
- * TODO: Currently this is only used for the floating-point encoder. I was
- *       able to make it work for the fixed-point encoder, but quality was
- *       generally lower in most cases than not using coupling. If a more
- *       adaptive coupling strategy were to be implemented it might be useful
- *       at that time to use coupling for the fixed-point encoder as well.
  */
 static void apply_channel_coupling(AC3EncodeContext *s)
 {
@@ -291,7 +286,6 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         if (!block->cpl_in_use)
             continue;
 
-        clip_coefficients(&s->dsp, cpl_coords[blk][1], s->fbw_channels * 16);
         s->ac3dsp.float_to_fixed24(fixed_cpl_coords[blk][1],
                                    cpl_coords[blk][1],
                                    s->fbw_channels * 16);

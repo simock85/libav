@@ -322,6 +322,14 @@ typedef struct AVOutputFormat {
 
     const AVClass *priv_class; ///< AVClass for the private context
 
+    /**
+     * Test if the given codec can be stored in this container.
+     *
+     * @return 1 if the codec is supported, 0 if it is not.
+     *         A negative number if unknown.
+     */
+    int (*query_codec)(enum CodecID id, int std_compliance);
+
     /* private fields */
     struct AVOutputFormat *next;
 } AVOutputFormat;
@@ -854,6 +862,14 @@ typedef struct AVFormatContext {
      * decoding: number of frames used to probe fps
      */
     int fps_probe_size;
+
+    /**
+     * Error recognition; higher values will detect more errors but may
+     * misdetect some more or less valid parts as errors.
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+    int error_recognition;
 } AVFormatContext;
 
 typedef struct AVPacketList {
@@ -1586,5 +1602,15 @@ attribute_deprecated int avf_sdp_create(AVFormatContext *ac[], int n_files, char
  * @param extensions a comma-separated list of filename extensions
  */
 int av_match_ext(const char *filename, const char *extensions);
+
+/**
+ * Test if the given container can store a codec.
+ *
+ * @param std_compliance standards compliance level, one of FF_COMPLIANCE_*
+ *
+ * @return 1 if codec with ID codec_id can be stored in ofmt, 0 if it cannot.
+ *         A negative number if this information is not available.
+ */
+int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance);
 
 #endif /* AVFORMAT_AVFORMAT_H */

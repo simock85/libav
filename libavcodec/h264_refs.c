@@ -515,9 +515,10 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             pic = find_short(h, frame_num, &j);
             if(!pic){
                 if(mmco[i].opcode != MMCO_SHORT2LONG || !h->long_ref[mmco[i].long_arg]
-                   || h->long_ref[mmco[i].long_arg]->frame_num != frame_num)
-                av_log(h->s.avctx, AV_LOG_ERROR, "mmco: unref short failure\n");
-                err = AVERROR_INVALIDDATA;
+                   || h->long_ref[mmco[i].long_arg]->frame_num != frame_num) {
+                    av_log(h->s.avctx, AV_LOG_ERROR, "mmco: unref short failure\n");
+                    err = AVERROR_INVALIDDATA;
+                }
                 continue;
             }
         }
@@ -654,7 +655,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
 
     print_short_term(h);
     print_long_term(h);
-    return err;
+    return h->s.avctx->error_recognition >= FF_ER_EXPLODE ? err : 0;
 }
 
 int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
@@ -684,7 +685,7 @@ int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
                 }
                 if(opcode==MMCO_SHORT2LONG || opcode==MMCO_LONG2UNUSED || opcode==MMCO_LONG || opcode==MMCO_SET_MAX_LONG){
                     unsigned int long_arg= get_ue_golomb_31(gb);
-                    if(long_arg >= 32 || (long_arg >= 16 && !(opcode == MMCO_LONG2UNUSED && FIELD_PICTURE))){
+                    if(long_arg >= 32 || (long_arg >= 16 && !(opcode == MMCO_SET_MAX_LONG && long_arg == 16) && !(opcode == MMCO_LONG2UNUSED && FIELD_PICTURE))){
                         av_log(h->s.avctx, AV_LOG_ERROR, "illegal long ref in memory management control operation %d\n", opcode);
                         return -1;
                     }
