@@ -19,7 +19,7 @@
  */
 
 #include <libavformat/avformat.h>
-
+#include <libavutil/avutil.h>
 
 int main(int argc, char **argv){
     int ret = 0;
@@ -32,19 +32,22 @@ int main(int argc, char **argv){
     ret = avformat_open_input(&fmt_ctx, argv[1], i_format, NULL);
 
     if ((ret = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
-
+        printf("find stream info failed\n");
     }
-    av_dump_format(fmt_ctx, 0, argv[1], 0);
 
+    av_dump_format(fmt_ctx, 0, argv[1], 0);
 
     av_init_packet(&pkt);
 
     while (!av_read_frame(fmt_ctx, &pkt)){
-        printf("pts %"PRId64"\n", pkt.pts );
+        if (pkt.pts == AV_NOPTS_VALUE){
+            printf("No pts\n");
+        }
+        else {
+            printf("pts %"PRId64"\n", pkt.pts );
+        }
         av_free_packet(&pkt);
     }
 
     return ret;
-
-
 }
