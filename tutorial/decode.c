@@ -15,6 +15,7 @@ int main(int argc, char **argv){
     AVPacket pkt;
     AVFrame *img = avcodec_alloc_frame();
     AVCodecContext *cur_codec;
+    AVCodec *codec;
 
 
     av_register_all();
@@ -32,13 +33,19 @@ int main(int argc, char **argv){
     for (i=0; i<ctx->nb_streams; i++){
         cur_codec = ctx->streams[i]->codec;
         if (cur_codec->codec_type == AVMEDIA_TYPE_VIDEO){
+            codec = avcodec_find_decoder(cur_codec->codec_id);
+            if(avcodec_open2(cur_codec, codec, NULL)<0){
+                exit(1);
+            }
             while (!av_read_frame(ctx, &pkt)){
-                ret = avcodec_decode_video2(cur_codec, img, &got_ptr, &pkt);
-                printf("got_ptr: %d\n", got_ptr);
-                av_free_packet(&pkt);
-                if (!(got_ptr)){
-                    exit(1);
+                if (avcodec_decode_video2(cur_codec, img, &got_ptr, &pkt)<0){
+                    exit(2);
                 }
+                printf("key_frame: %d\n", img->key_frame);
+                av_free_packet(&pkt);
+//                if (!(got_ptr)){
+//                    exit(1);
+//                }
             }
         }
     }
