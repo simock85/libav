@@ -36,6 +36,7 @@ int main(int argc, char **argv){
     AVFrame *img = avcodec_alloc_frame(), *imgRGB = avcodec_alloc_frame();
     AVCodecContext *cur_codec;
     AVCodec *codec;
+    SwsContext *sws_context = NULL;
 
 
     av_register_all();
@@ -54,8 +55,8 @@ int main(int argc, char **argv){
         cur_codec = ctx->streams[i]->codec;
         if (cur_codec->codec_type == AVMEDIA_TYPE_VIDEO){
             codec = avcodec_find_decoder(cur_codec->codec_id);
-            SwsContext *sws_context = sws_getContext(cur_codec->width, cur_codec->height, cur_codec->pix_fmt,
-                    cur_codec->width, cur_codec->height, PIX_FMT_RGB24, SWS_FAST_BILINEAR, 0, 0, 0);
+            sws_context = sws_getContext(cur_codec->width, cur_codec->height, cur_codec->pix_fmt,
+                    704, 576, PIX_FMT_RGB24, SWS_FAST_BILINEAR, 0, 0, 0);
             if(avcodec_open2(cur_codec, codec, NULL)<0){
                 exit(1);
             }

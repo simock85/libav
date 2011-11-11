@@ -30,6 +30,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
+#include "/usr/lib/x86_64-linux-gnu/gcc/x86_64-linux-gnu/4.5/include/stddef.h"
 
 #define STR(s)         AV_TOSTRING(s) //AV_STRINGIFY is too long
 
