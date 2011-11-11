@@ -150,7 +150,7 @@ static int xmv_read_header(AVFormatContext *s,
 
     /* Video track */
 
-    vst = av_new_stream(s, 0);
+    vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
 
@@ -211,7 +211,7 @@ static int xmv_read_header(AVFormatContext *s,
             av_log(s, AV_LOG_WARNING, "Unsupported 5.1 ADPCM audio stream "
                                       "(0x%04X)\n", track->flags);
 
-        ast = av_new_stream(s, audio_track);
+        ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
 
@@ -235,17 +235,8 @@ static int xmv_read_header(AVFormatContext *s,
     /** Initialize the packet context */
 
     xmv->next_packet_offset = avio_tell(pb);
-
-    xmv->next_packet_size = this_packet_size - xmv->next_packet_offset;
-    xmv->this_packet_size = 0;
-
-    xmv->video.current_frame = 0;
-    xmv->video.frame_count   = 0;
-    xmv->video.pts           = 0;
-    xmv->video.last_pts      = 0;
-
-    xmv->current_stream = 0;
-    xmv->stream_count   = xmv->audio_track_count + 1;
+    xmv->next_packet_size   = this_packet_size - xmv->next_packet_offset;
+    xmv->stream_count       = xmv->audio_track_count + 1;
 
     return 0;
 }

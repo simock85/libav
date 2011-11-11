@@ -29,6 +29,7 @@
 
 #include "libavutil/intmath.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -305,7 +306,10 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     s->luma_elim_threshold  = avctx->luma_elim_threshold;
     s->chroma_elim_threshold= avctx->chroma_elim_threshold;
     s->strict_std_compliance= avctx->strict_std_compliance;
-    s->data_partitioning= avctx->flags & CODEC_FLAG_PART;
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
+    if (avctx->flags & CODEC_FLAG_PART)
+        s->data_partitioning = 1;
+#endif
     s->quarter_sample= (avctx->flags & CODEC_FLAG_QPEL)!=0;
     s->mpeg_quant= avctx->mpeg_quant;
     s->rtp_mode= !!avctx->rtp_payload_size;
@@ -333,11 +337,13 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
                         || (s->flags&CODEC_FLAG_QP_RD))
                        && !s->fixed_qscale;
 
-    s->obmc= !!(s->flags & CODEC_FLAG_OBMC);
     s->loop_filter= !!(s->flags & CODEC_FLAG_LOOP_FILTER);
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
     s->alternate_scan= !!(s->flags & CODEC_FLAG_ALT_SCAN);
     s->intra_vlc_format= !!(s->flags2 & CODEC_FLAG2_INTRA_VLC);
     s->q_scale_type= !!(s->flags2 & CODEC_FLAG2_NON_LINEAR_QUANT);
+    s->obmc= !!(s->flags & CODEC_FLAG_OBMC);
+#endif
 
     if(avctx->rc_max_rate && !avctx->rc_buffer_size){
         av_log(avctx, AV_LOG_ERROR, "a vbv buffer size is needed, for encoding with a maximum bitrate\n");
@@ -390,20 +396,24 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
     if(s->obmc && s->codec_id != CODEC_ID_H263 && s->codec_id != CODEC_ID_H263P){
         av_log(avctx, AV_LOG_ERROR, "OBMC is only supported with H263(+)\n");
         return -1;
     }
+#endif
 
     if(s->quarter_sample && s->codec_id != CODEC_ID_MPEG4){
         av_log(avctx, AV_LOG_ERROR, "qpel not supported by codec\n");
         return -1;
     }
 
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
     if(s->data_partitioning && s->codec_id != CODEC_ID_MPEG4){
         av_log(avctx, AV_LOG_ERROR, "data partitioning not supported by codec\n");
         return -1;
     }
+#endif
 
     if(s->max_b_frames && s->codec_id != CODEC_ID_MPEG4 && s->codec_id != CODEC_ID_MPEG1VIDEO && s->codec_id != CODEC_ID_MPEG2VIDEO){
         av_log(avctx, AV_LOG_ERROR, "b frames not supported by codec\n");
@@ -461,10 +471,12 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(s->q_scale_type == 1){
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
         if(s->codec_id != CODEC_ID_MPEG2VIDEO){
             av_log(avctx, AV_LOG_ERROR, "non linear quant is only available for mpeg2\n");
             return -1;
         }
+#endif
         if(avctx->qmax > 12){
             av_log(avctx, AV_LOG_ERROR, "non linear quant only supports qmax <= 12 currently\n");
             return -1;
@@ -588,7 +600,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
             return -1;
         }
         s->out_format = FMT_H263;
-        s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
         avctx->delay=0;
         s->low_delay=1;
         break;
@@ -596,14 +607,18 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_H263;
         s->h263_plus = 1;
         /* Fx */
-        s->umvplus = (avctx->flags & CODEC_FLAG_H263P_UMV) ? 1:0;
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
+        if (avctx->flags & CODEC_FLAG_H263P_UMV)
+            s->umvplus = 1;
+        if (avctx->flags & CODEC_FLAG_H263P_AIV)
+            s->alt_inter_vlc = 1;
+        if (avctx->flags & CODEC_FLAG_H263P_SLICE_STRUCT)
+            s->h263_slice_structured = 1;
+#endif
         s->h263_aic= (avctx->flags & CODEC_FLAG_AC_PRED) ? 1:0;
         s->modified_quant= s->h263_aic;
-        s->alt_inter_vlc= (avctx->flags & CODEC_FLAG_H263P_AIV) ? 1:0;
-        s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
         s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
         s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
-        s->h263_slice_structured= (s->flags & CODEC_FLAG_H263P_SLICE_STRUCT) ? 1:0;
 
         /* /Fx */
         /* These are just to be sure */
@@ -1078,8 +1093,8 @@ static int select_input_picture(MpegEncContext *s){
                             s->input_picture[0]->f.data[i] = NULL;
                         s->input_picture[0]->f.type = 0;
                     }else{
-                        assert(   s->input_picture[0]->type==FF_BUFFER_TYPE_USER
-                               || s->input_picture[0]->type==FF_BUFFER_TYPE_INTERNAL);
+                        assert(   s->input_picture[0]->f.type == FF_BUFFER_TYPE_USER
+                               || s->input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
 
                         s->avctx->release_buffer(s->avctx, (AVFrame*)s->input_picture[0]);
                     }
@@ -1205,8 +1220,8 @@ no_output_pic:
         }else{
             // input is not a shared pix -> reuse buffer for current_pix
 
-            assert(   s->reordered_input_picture[0]->type==FF_BUFFER_TYPE_USER
-                   || s->reordered_input_picture[0]->type==FF_BUFFER_TYPE_INTERNAL);
+            assert(   s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_USER
+                   || s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
 
             s->current_picture_ptr= s->reordered_input_picture[0];
             for(i=0; i<4; i++){
@@ -2008,7 +2023,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
             int varc;
             int sum = s->dsp.pix_sum(pix, s->linesize);
 
-            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
+            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)sum*sum)>>8) + 500 + 128)>>8;
 
             s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
             s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
@@ -2029,7 +2044,7 @@ static void write_slice_end(MpegEncContext *s){
         ff_mjpeg_encode_stuffing(&s->pb);
     }
 
-    align_put_bits(&s->pb);
+    avpriv_align_put_bits(&s->pb);
     flush_put_bits(&s->pb);
 
     if((s->flags&CODEC_FLAG_PASS1) && !s->partitioned_frame)
@@ -2465,18 +2480,18 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
                 pb_bits_count= put_bits_count(&s->pb);
                 flush_put_bits(&s->pb);
-                ff_copy_bits(&backup_s.pb, bit_buf[next_block^1], pb_bits_count);
+                avpriv_copy_bits(&backup_s.pb, bit_buf[next_block^1], pb_bits_count);
                 s->pb= backup_s.pb;
 
                 if(s->data_partitioning){
                     pb2_bits_count= put_bits_count(&s->pb2);
                     flush_put_bits(&s->pb2);
-                    ff_copy_bits(&backup_s.pb2, bit_buf2[next_block^1], pb2_bits_count);
+                    avpriv_copy_bits(&backup_s.pb2, bit_buf2[next_block^1], pb2_bits_count);
                     s->pb2= backup_s.pb2;
 
                     tex_pb_bits_count= put_bits_count(&s->tex_pb);
                     flush_put_bits(&s->tex_pb);
-                    ff_copy_bits(&backup_s.tex_pb, bit_buf_tex[next_block^1], tex_pb_bits_count);
+                    avpriv_copy_bits(&backup_s.tex_pb, bit_buf_tex[next_block^1], tex_pb_bits_count);
                     s->tex_pb= backup_s.tex_pb;
                 }
                 s->last_bits= put_bits_count(&s->pb);
@@ -2699,7 +2714,7 @@ static void merge_context_after_encode(MpegEncContext *dst, MpegEncContext *src)
 
     assert(put_bits_count(&src->pb) % 8 ==0);
     assert(put_bits_count(&dst->pb) % 8 ==0);
-    ff_copy_bits(&dst->pb, src->pb.buf, put_bits_count(&src->pb));
+    avpriv_copy_bits(&dst->pb, src->pb.buf, put_bits_count(&src->pb));
     flush_put_bits(&dst->pb);
 }
 
@@ -2742,7 +2757,7 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
 
 /* must be called before writing the header */
 static void set_frame_distances(MpegEncContext * s){
-    assert(s->current_picture_ptr->pts != AV_NOPTS_VALUE);
+    assert(s->current_picture_ptr->f.pts != AV_NOPTS_VALUE);
     s->time = s->current_picture_ptr->f.pts * s->avctx->time_base.num;
 
     if(s->pict_type==AV_PICTURE_TYPE_B){
@@ -3769,6 +3784,21 @@ int dct_quantize_c(MpegEncContext *s,
     return last_non_zero;
 }
 
+#define OFFSET(x) offsetof(MpegEncContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption h263_options[] = {
+    { "obmc",         "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "structured_slices","Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE},
+    { NULL },
+};
+
+static const AVClass h263_class = {
+    .class_name = "H.263 encoder",
+    .item_name  = av_default_item_name,
+    .option     = h263_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_h263_encoder = {
     .name           = "h263",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -3779,6 +3809,21 @@ AVCodec ff_h263_encoder = {
     .close          = MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
+    .priv_class     = &h263_class,
+};
+
+static const AVOption h263p_options[] = {
+    { "umv",        "Use unlimited motion vectors.",    OFFSET(umvplus), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "aiv",        "Use alternative inter VLC.",       OFFSET(alt_inter_vlc), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "obmc",       "use overlapped block motion compensation.", OFFSET(obmc), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "structured_slices", "Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE},
+    { NULL },
+};
+static const AVClass h263p_class = {
+    .class_name = "H.263p encoder",
+    .item_name  = av_default_item_name,
+    .option     = h263p_options,
+    .version    = LIBAVUTIL_VERSION_INT,
 };
 
 AVCodec ff_h263p_encoder = {
@@ -3792,6 +3837,7 @@ AVCodec ff_h263p_encoder = {
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
+    .priv_class     = &h263p_class,
 };
 
 AVCodec ff_msmpeg4v2_encoder = {
