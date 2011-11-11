@@ -5,15 +5,35 @@
  *      Author: simock85
  */
 
-#include "../libavformat/avformat.h"
-#include "../libavcodec/avcodec.h"
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
+#include <libswscale/swscale_internal.h>
+
+static void SaveFrame(AVFrame *pFrame, int width, int height, int iFrame) {
+  FILE *pFile;
+  char szFilename[32];
+  int  y;
+
+  sprintf(szFilename, "frame%d.ppm", iFrame);
+  pFile=fopen(szFilename, "wb");
+  if(pFile==NULL)
+    return;
+
+  fprintf(pFile, "P6\n%d %d\n255\n", width, height);
+
+  for(y=0; y<height; y++)
+    fwrite(pFrame->data[0]+y*pFrame->linesize[0], 1, width*3, pFile);
+
+  fclose(pFile);
+}
 
 int main(int argc, char **argv){
-    int ret, i, got_ptr=0;
+    int ret, i, got_ptr=0, j;
     AVFormatContext *ctx=NULL;
     AVInputFormat *format=NULL;
     AVPacket pkt;
-    AVFrame *img = avcodec_alloc_frame();
+    AVFrame *img = avcodec_alloc_frame(), *imgRGB = avcodec_alloc_frame();
     AVCodecContext *cur_codec;
     AVCodec *codec;
 
@@ -34,18 +54,25 @@ int main(int argc, char **argv){
         cur_codec = ctx->streams[i]->codec;
         if (cur_codec->codec_type == AVMEDIA_TYPE_VIDEO){
             codec = avcodec_find_decoder(cur_codec->codec_id);
+            SwsContext *sws_context = sws_getContext(cur_codec->width, cur_codec->height, cur_codec->pix_fmt,
+                    cur_codec->width, cur_codec->height, PIX_FMT_RGB24, SWS_FAST_BILINEAR, 0, 0, 0);
             if(avcodec_open2(cur_codec, codec, NULL)<0){
                 exit(1);
             }
+            j = 0;
             while (!av_read_frame(ctx, &pkt)){
                 if (avcodec_decode_video2(cur_codec, img, &got_ptr, &pkt)<0){
                     exit(2);
                 }
-                printf("key_frame: %d\n", img->key_frame);
+                if (got_ptr){
+                    sws_scale(sws_context, (const uint8_t* const*)img->data, img->linesize,
+                            0, cur_codec->height, imgRGB->data, imgRGB->linesize);
+
+                    if(++j<=5){
+                        SaveFrame(imgRGB, cur_codec->width, cur_codec->height, j);
+                    }
+                }
                 av_free_packet(&pkt);
-//                if (!(got_ptr)){
-//                    exit(1);
-//                }
             }
         }
     }
