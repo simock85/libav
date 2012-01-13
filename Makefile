@@ -64,7 +64,7 @@ TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
-TUTORIAL    = new packet-inspection simple-packet-inspection muxer decode decode-again
+TUTORIAL    = packet-inspection simple-packet-inspection muxer decode decode-audio
 BASENAMES   = ffmpeg avconv avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
@@ -97,7 +97,8 @@ tutorial/packet-inspection$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -
 tutorial/simple-packet-inspection$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz
 tutorial/muxer$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz -lswscale
 tutorial/decode$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz -lswscale
-tutorial/decode-again$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz -lswscale
+tutorial/decode-audio$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz -lswscale
+
 
 $(TUTORIAL): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
