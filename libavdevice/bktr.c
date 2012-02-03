@@ -25,6 +25,7 @@
  */
 
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -242,7 +243,7 @@ static int grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     return video_buf_size;
 }
 
-static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
+static int grab_read_header(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
     AVStream *st;
@@ -275,7 +276,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         ret = AVERROR(ENOMEM);
         goto out;
     }
-    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in use */
+    avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in use */
 
     s->width = width;
     s->height = height;
@@ -291,7 +292,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
 
     if (bktr_init(s1->filename, width, height, s->standard,
-            &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0) {
+                  &s->video_fd, &s->tuner_fd, -1, 0.0) < 0) {
         ret = AVERROR(EIO);
         goto out;
     }

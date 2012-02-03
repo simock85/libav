@@ -19,9 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
+#include "internal.h"
 #include "gxf.h"
 #include "riff.h"
 #include "audiointerleave.h"
@@ -398,11 +399,6 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     AVDictionaryEntry *t;
     uint32_t timecode;
 
-#if FF_API_TIMESTAMP
-    if (s->timestamp)
-        timestamp = s->timestamp;
-    else
-#endif
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
         timestamp = ff_iso8601_to_unix_time(t->value);
 
@@ -519,8 +515,8 @@ static int gxf_write_umf_media_dv(AVIOContext *pb, GXFStreamContext *sc)
 
 static int gxf_write_umf_media_audio(AVIOContext *pb, GXFStreamContext *sc)
 {
-    avio_wl64(pb, av_dbl2int(1)); /* sound level to begin to */
-    avio_wl64(pb, av_dbl2int(1)); /* sound level to begin to */
+    avio_wl64(pb, av_double2int(1)); /* sound level to begin to */
+    avio_wl64(pb, av_double2int(1)); /* sound level to begin to */
     avio_wl32(pb, 0); /* number of fields over which to ramp up sound level */
     avio_wl32(pb, 0); /* number of fields over which to ramp down sound level */
     avio_wl32(pb, 0); /* reserved */
@@ -676,7 +672,7 @@ static int gxf_write_header(AVFormatContext *s)
             }
             sc->track_type = 2;
             sc->sample_rate = st->codec->sample_rate;
-            av_set_pts_info(st, 64, 1, sc->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, sc->sample_rate);
             sc->sample_size = 16;
             sc->frame_rate_index = -2;
             sc->lines_index = -2;
@@ -706,7 +702,7 @@ static int gxf_write_header(AVFormatContext *s)
                        "gxf muxer only accepts PAL or NTSC resolutions currently\n");
                 return -1;
             }
-            av_set_pts_info(st, 64, gxf->time_base.num, gxf->time_base.den);
+            avpriv_set_pts_info(st, 64, gxf->time_base.num, gxf->time_base.den);
             if (gxf_find_lines_index(st) < 0)
                 sc->lines_index = -1;
             sc->sample_size = st->codec->bit_rate;

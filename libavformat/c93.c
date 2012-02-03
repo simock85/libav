@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "voc.h"
 #include "libavutil/intreadwrite.h"
 
@@ -56,8 +57,7 @@ static int probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static int read_header(AVFormatContext *s,
-                           AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     AVStream *video;
     AVIOContext *pb = s->pb;
@@ -89,7 +89,7 @@ static int read_header(AVFormatContext *s,
     video->codec->height = 192;
     /* 4:3 320x200 with 8 empty lines */
     video->sample_aspect_ratio = (AVRational) { 5, 6 };
-    av_set_pts_info(video, 64, 2, 25);
+    avpriv_set_pts_info(video, 64, 2, 25);
     video->nb_frames = framecount;
     video->duration = framecount;
     video->start_time = 0;

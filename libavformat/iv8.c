@@ -19,11 +19,12 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 
 static int probe(AVProbeData *p)
 {
-    // the single file i have starts with that, i dont know if others do too
+    // the single file I have starts with that, I do not know if others do, too
     if(   p->buf[0] == 1
        && p->buf[1] == 1
        && p->buf[2] == 3
@@ -36,7 +37,7 @@ static int probe(AVProbeData *p)
     return 0;
 }
 
-static int read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     AVStream *st;
 
@@ -47,7 +48,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_MPEG4;
     st->need_parsing = AVSTREAM_PARSE_FULL;
-    av_set_pts_info(st, 64, 1, 90000);
+    avpriv_set_pts_info(st, 64, 1, 90000);
 
     return 0;
 
@@ -114,5 +115,4 @@ AVInputFormat ff_iv8_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .flags= AVFMT_GENERIC_INDEX,
-    .value = CODEC_ID_MPEG4,
 };

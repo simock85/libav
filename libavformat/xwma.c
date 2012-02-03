@@ -22,6 +22,7 @@
 #include <inttypes.h>
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 
 /*
@@ -39,7 +40,7 @@ static int xwma_probe(AVProbeData *p)
     return 0;
 }
 
-static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int xwma_read_header(AVFormatContext *s)
 {
     int64_t size, av_uninit(data_size);
     int ret;
@@ -115,7 +116,7 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     /* set the sample rate */
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     /* parse the remaining RIFF chunks */
     for (;;) {

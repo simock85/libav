@@ -52,6 +52,8 @@ static int rtsp_read_play(AVFormatContext *s)
                 rtpctx->last_rtcp_ntp_time  = AV_NOPTS_VALUE;
                 rtpctx->first_rtcp_ntp_time = AV_NOPTS_VALUE;
                 rtpctx->base_timestamp      = 0;
+                rtpctx->timestamp           = 0;
+                rtpctx->unwrapped_timestamp = 0;
                 rtpctx->rtcp_ts_offset      = 0;
             }
         }
@@ -148,8 +150,7 @@ static int rtsp_probe(AVProbeData *p)
     return 0;
 }
 
-static int rtsp_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static int rtsp_read_header(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
     int ret;

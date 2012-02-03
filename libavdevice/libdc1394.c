@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -116,7 +117,7 @@ static const AVClass libdc1394_class = {
 };
 
 
-static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
+static inline int dc1394_read_common(AVFormatContext *c,
                                      struct dc1394_frame_format **select_fmt, struct dc1394_frame_rate **select_fps)
 {
     dc1394_data* dc1394 = c->priv_data;
@@ -165,7 +166,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
         ret = AVERROR(ENOMEM);
         goto out;
     }
-    av_set_pts_info(vst, 64, 1, 1000);
+    avpriv_set_pts_info(vst, 64, 1, 1000);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_RAWVIDEO;
     vst->codec->time_base.den = framerate.num;
@@ -190,7 +191,7 @@ out:
 }
 
 #if HAVE_LIBDC1394_1
-static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
+static int dc1394_v1_read_header(AVFormatContext *c)
 {
     dc1394_data* dc1394 = c->priv_data;
     AVStream* vst;
@@ -199,7 +200,7 @@ static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
     struct dc1394_frame_format *fmt = NULL;
     struct dc1394_frame_rate *fps = NULL;
 
-    if (dc1394_read_common(c,ap,&fmt,&fps) != 0)
+    if (dc1394_read_common(c, &fmt, &fps) != 0)
         return -1;
 
     /* Now let us prep the hardware. */
@@ -284,7 +285,7 @@ static int dc1394_v1_close(AVFormatContext * context)
 }
 
 #elif HAVE_LIBDC1394_2
-static int dc1394_v2_read_header(AVFormatContext *c, AVFormatParameters * ap)
+static int dc1394_v2_read_header(AVFormatContext *c)
 {
     dc1394_data* dc1394 = c->priv_data;
     dc1394camera_list_t *list;
@@ -292,7 +293,7 @@ static int dc1394_v2_read_header(AVFormatContext *c, AVFormatParameters * ap)
     struct dc1394_frame_format *fmt = NULL;
     struct dc1394_frame_rate *fps = NULL;
 
-    if (dc1394_read_common(c,ap,&fmt,&fps) != 0)
+    if (dc1394_read_common(c, &fmt, &fps) != 0)
        return -1;
 
     /* Now let us prep the hardware. */
@@ -370,8 +371,8 @@ static int dc1394_v2_read_packet(AVFormatContext *c, AVPacket *pkt)
 
     res = dc1394_capture_dequeue(dc1394->camera, DC1394_CAPTURE_POLICY_WAIT, &dc1394->frame);
     if (res == DC1394_SUCCESS) {
-        dc1394->packet.data = (uint8_t *)(dc1394->frame->image);
-        dc1394->packet.pts = (dc1394->current_frame  * 1000000) / (dc1394->frame_rate);
+        dc1394->packet.data = (uint8_t *) dc1394->frame->image;
+        dc1394->packet.pts  = dc1394->current_frame * 1000000 / dc1394->frame_rate;
         res = dc1394->frame->image_bytes;
     } else {
         av_log(c, AV_LOG_ERROR, "DMA capture failed\n");

@@ -85,6 +85,7 @@ static const IdStrMap img_tags[] = {
     { CODEC_ID_JPEG2000  , "jpc"},
     { CODEC_ID_DPX       , "dpx"},
     { CODEC_ID_PICTOR    , "pic"},
+    { CODEC_ID_XWD       , "xwd"},
     { CODEC_ID_NONE      , NULL}
 };
 
@@ -198,13 +199,7 @@ enum CodecID ff_guess_image2_codec(const char *filename)
     return av_str2id(img_tags, filename);
 }
 
-#if FF_API_GUESS_IMG2_CODEC
-enum CodecID av_guess_image2_codec(const char *filename){
-    return av_str2id(img_tags, filename);
-}
-#endif
-
-static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
+static int read_header(AVFormatContext *s1)
 {
     VideoData *s = s1->priv_data;
     int first_index, last_index, ret = 0;
@@ -233,11 +228,6 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         return ret;
     }
 
-#if FF_API_LOOP_INPUT
-    if (s1->loop_input)
-        s->loop = s1->loop_input;
-#endif
-
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;
     s->img_count = 0;
@@ -250,7 +240,7 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
-    av_set_pts_info(st, 60, framerate.den, framerate.num);
+    avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
 
     if (width && height) {
         st->codec->width  = width;
@@ -304,7 +294,8 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
                                   s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
-            if (avio_open(&f[i], filename, AVIO_FLAG_READ) < 0) {
+            if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
+                           &s1->interrupt_callback, NULL) < 0) {
                 if(i==1)
                     break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",filename);
@@ -388,7 +379,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for(i=0; i<3; i++){
-            if (avio_open(&pb[i], filename, AVIO_FLAG_WRITE) < 0) {
+            if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
+                           &s->interrupt_callback, NULL) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
             }
@@ -430,7 +422,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                      (!st->codec->extradata_size &&
                       AV_RL32(pkt->data+4) != MKTAG('j','P',' ',' '))){ // signature
             error:
-                av_log(s, AV_LOG_ERROR, "malformated jpeg2000 codestream\n");
+                av_log(s, AV_LOG_ERROR, "malformed JPEG 2000 codestream\n");
                 return -1;
             }
         }
@@ -499,7 +491,7 @@ AVOutputFormat ff_image2_muxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
     .extensions     = "bmp,dpx,jpeg,jpg,ljpg,pam,pbm,pcx,pgm,pgmyuv,png,"
-                      "ppm,sgi,tga,tif,tiff,jp2",
+                      "ppm,sgi,tga,tif,tiff,jp2,xwd",
     .priv_data_size = sizeof(VideoData),
     .video_codec    = CODEC_ID_MJPEG,
     .write_header   = write_header,

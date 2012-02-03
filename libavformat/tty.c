@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avformat.h"
+#include "internal.h"
 #include "sauce.h"
 
 typedef struct {
@@ -71,8 +72,7 @@ static int efi_read(AVFormatContext *avctx, uint64_t start_pos)
     return 0;
 }
 
-static int read_header(AVFormatContext *avctx,
-                       AVFormatParameters *ap)
+static int read_header(AVFormatContext *avctx)
 {
     TtyDemuxContext *s = avctx->priv_data;
     int width = 0, height = 0, ret = 0;
@@ -97,7 +97,7 @@ static int read_header(AVFormatContext *avctx,
     }
     st->codec->width  = width;
     st->codec->height = height;
-    av_set_pts_info(st, 60, framerate.den, framerate.num);
+    avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
 
     /* simulate tty display speed */
     s->chars_per_frame = FFMAX(av_q2d(st->time_base)*s->chars_per_frame, 1);

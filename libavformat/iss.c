@@ -27,6 +27,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "libavutil/avstring.h"
 
 #define ISS_SIG "IMA_ADPCM_Sound"
@@ -64,7 +65,7 @@ static int iss_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX;
 }
 
-static av_cold int iss_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static av_cold int iss_read_header(AVFormatContext *s)
 {
     IssDemuxContext *iss = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -101,7 +102,7 @@ static av_cold int iss_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->bit_rate = st->codec->channels * st->codec->sample_rate
                                       * st->codec->bits_per_coded_sample;
     st->codec->block_align = iss->packet_size;
-    av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
 
     return 0;
 }
@@ -129,4 +130,3 @@ AVInputFormat ff_iss_demuxer = {
     .read_header    = iss_read_header,
     .read_packet    = iss_read_packet,
 };
-

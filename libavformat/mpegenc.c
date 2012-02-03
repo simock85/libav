@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/put_bits.h"
 #include "avformat.h"
+#include "internal.h"
 #include "mpeg.h"
 
 #define MAX_PAYLOAD_SIZE 4096
@@ -336,7 +337,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             goto fail;
         st->priv_data = stream;
 
-        av_set_pts_info(st, 64, 1, 90000);
+        avpriv_set_pts_info(st, 64, 1, 90000);
 
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -420,15 +421,10 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             video_bitrate += codec_rate;
     }
 
-#if FF_API_MUXRATE
-    if(ctx->mux_rate){
-        s->mux_rate= (ctx->mux_rate + (8 * 50) - 1) / (8 * 50);
-    } else
-#endif
     if (!s->mux_rate) {
         /* we increase slightly the bitrate to take into account the
            headers. XXX: compute it exactly */
-        bitrate += bitrate*5/100;
+        bitrate += bitrate / 20;
         bitrate += 10000;
         s->mux_rate = (bitrate + (8 * 50) - 1) / (8 * 50);
     }
@@ -1162,10 +1158,6 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     int preload;
     const int is_iframe = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY);
 
-#if FF_API_PRELOAD
-    if (ctx->preload)
-        s->preload = ctx->preload;
-#endif
     preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
 
     pts= pkt->pts;

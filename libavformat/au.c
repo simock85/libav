@@ -28,6 +28,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
@@ -117,8 +118,7 @@ static int au_probe(AVProbeData *p)
 }
 
 /* au input */
-static int au_read_header(AVFormatContext *s,
-                          AVFormatParameters *ap)
+static int au_read_header(AVFormatContext *s)
 {
     int size;
     unsigned int tag;
@@ -159,7 +159,7 @@ static int au_read_header(AVFormatContext *s,
     st->codec->codec_id = codec;
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
-    av_set_pts_info(st, 64, 1, rate);
+    avpriv_set_pts_info(st, 64, 1, rate);
     return 0;
 }
 

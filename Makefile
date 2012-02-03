@@ -52,7 +52,6 @@ COMPILE_S = $(call COMPILE,AS)
 
 %.c %.h: TAG = GEN
 
-PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_AVCONV)   += avconv
 PROGS-$(CONFIG_AVPLAY)   += avplay
 PROGS-$(CONFIG_AVPROBE)  += avprobe
@@ -65,7 +64,7 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 TUTORIAL    = packet-inspection simple-packet-inspection muxer decode decode-audio
-BASENAMES   = ffmpeg avconv avplay avprobe avserver
+BASENAMES   = avconv avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
 
@@ -123,6 +122,8 @@ define DOSUBDIR
 $(foreach V,$(SUBDIR_VARS),$(eval $(call RESET,$(V))))
 SUBDIR := $(1)/
 include $(SRC_PATH)/$(1)/Makefile
+-include $(SRC_PATH)/$(1)/$(ARCH)/Makefile
+include $(SRC_PATH)/library.mak
 endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))

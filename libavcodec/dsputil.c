@@ -38,7 +38,6 @@
 #include "config.h"
 #include "ac3dec.h"
 #include "vorbis.h"
-#include "png.h"
 
 uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
@@ -1779,7 +1778,7 @@ static void add_8x8basis_c(int16_t rem[64], int16_t basis[64], int scale){
 }
 
 /**
- * permutes an 8x8 block.
+ * Permute an 8x8 block.
  * @param block the block which will be permuted according to the given permutation vector
  * @param permutation the permutation vector
  * @param last the last non zero coefficient in scantable order, used to speed the permutation up
@@ -1880,17 +1879,6 @@ static void add_bytes_c(uint8_t *dst, uint8_t *src, int w){
     }
     for(; i<w; i++)
         dst[i+0] += src[i+0];
-}
-
-static void add_bytes_l2_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
-    long i;
-    for(i=0; i<=w-sizeof(long); i+=sizeof(long)){
-        long a = *(long*)(src1+i);
-        long b = *(long*)(src2+i);
-        *(long*)(dst+i) = ((a&pb_7f) + (b&pb_7f)) ^ ((a^b)&pb_80);
-    }
-    for(; i<w; i++)
-        dst[i] = src1[i]+src2[i];
 }
 
 static void diff_bytes_c(uint8_t *dst, uint8_t *src1, uint8_t *src2, int w){
@@ -2509,6 +2497,18 @@ static void butterflies_float_c(float *restrict v1, float *restrict v2,
     }
 }
 
+static void butterflies_float_interleave_c(float *dst, const float *src0,
+                                           const float *src1, int len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        float f1 = src0[i];
+        float f2 = src1[i];
+        dst[2*i    ] = f1 + f2;
+        dst[2*i + 1] = f1 - f2;
+    }
+}
+
 static float scalarproduct_float_c(const float *v1, const float *v2, int len)
 {
     float p = 0.0;
@@ -2991,7 +2991,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->ssd_int8_vs_int16 = ssd_int8_vs_int16_c;
 
     c->add_bytes= add_bytes_c;
-    c->add_bytes_l2= add_bytes_l2_c;
     c->diff_bytes= diff_bytes_c;
     c->add_hfyu_median_prediction= add_hfyu_median_prediction_c;
     c->sub_hfyu_median_prediction= sub_hfyu_median_prediction_c;
@@ -2999,9 +2998,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->add_hfyu_left_prediction_bgr32 = add_hfyu_left_prediction_bgr32_c;
     c->bswap_buf= bswap_buf;
     c->bswap16_buf = bswap16_buf;
-#if CONFIG_PNG_DECODER
-    c->add_png_paeth_prediction= ff_add_png_paeth_prediction;
-#endif
 
     if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
         c->h263_h_loop_filter= h263_h_loop_filter_c;
@@ -3036,6 +3032,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->vector_clip_int32 = vector_clip_int32_c;
     c->scalarproduct_float = scalarproduct_float_c;
     c->butterflies_float = butterflies_float_c;
+    c->butterflies_float_interleave = butterflies_float_interleave_c;
     c->vector_fmul_scalar = vector_fmul_scalar_c;
     c->vector_fmac_scalar = vector_fmac_scalar_c;
 

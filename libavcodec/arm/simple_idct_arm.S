@@ -53,8 +53,6 @@
 #define COL_SHIFTED_1 524288 /* 1<< (COL_SHIFT-1) */
 
 
-        .text
-
 function ff_simple_idct_arm, export=1
         @@ void simple_idct_arm(int16_t *block)
         @@ save stack for reg needed (take all of them),
@@ -493,8 +491,8 @@ __end_bef_a_evaluation:
         bal __end_a_evaluation
 
 
-__constant_ptr__:  @@ see #defines at the beginning of the source code for values.
         .align
+__constant_ptr__:  @@ see #defines at the beginning of the source code for values.
         .word   W1
         .word   W2
         .word   W3

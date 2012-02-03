@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct yop_dec_context {
     AVPacket video_packet;
@@ -46,7 +47,7 @@ static int yop_probe(AVProbeData *probe_packet)
     return 0;
 }
 
-static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int yop_read_header(AVFormatContext *s)
 {
     YopDecContext *yop = s->priv_data;
     AVIOContext *pb  = s->pb;
@@ -71,7 +72,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
     // Audio
     audio_dec               = audio_stream->codec;
     audio_dec->codec_type   = AVMEDIA_TYPE_AUDIO;
-    audio_dec->codec_id     = CODEC_ID_ADPCM_IMA_WS;
+    audio_dec->codec_id     = CODEC_ID_ADPCM_IMA_APC;
     audio_dec->channels     = 1;
     audio_dec->sample_rate  = 22050;
 
@@ -105,7 +106,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     avio_seek(pb, 2048, SEEK_SET);
 
-    av_set_pts_info(video_stream, 32, 1, frame_rate);
+    avpriv_set_pts_info(video_stream, 32, 1, frame_rate);
 
     return 0;
 }

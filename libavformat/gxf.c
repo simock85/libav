@@ -259,7 +259,7 @@ static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     avio_skip(pb, pkt_len);
 }
 
-static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
+static int gxf_header(AVFormatContext *s) {
     AVIOContext *pb = s->pb;
     GXFPktType pkt_type;
     int map_len;
@@ -362,7 +362,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         main_timebase = (AVRational){1001, 60000};
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
-        av_set_pts_info(st, 32, main_timebase.num, main_timebase.den);
+        avpriv_set_pts_info(st, 32, main_timebase.num, main_timebase.den);
     }
     return 0;
 }

@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 
 #include <windows.h>
@@ -40,7 +41,7 @@ typedef struct {
   int next_stream;
 } AVISynthContext;
 
-static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int avisynth_read_header(AVFormatContext *s)
 {
   AVISynthContext *avs = s->priv_data;
   HRESULT res;
@@ -137,7 +138,7 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
               st->codec->stream_codec_tag = stream->info.fccHandler;
 
-              av_set_pts_info(st, 64, info.dwScale, info.dwRate);
+              avpriv_set_pts_info(st, 64, info.dwScale, info.dwRate);
               st->start_time = stream->info.dwStart;
             }
         }

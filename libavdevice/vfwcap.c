@@ -20,6 +20,7 @@
  */
 
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -237,7 +238,7 @@ static int vfw_read_close(AVFormatContext *s)
     return 0;
 }
 
-static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
+static int vfw_read_header(AVFormatContext *s)
 {
     struct vfw_ctx *ctx = s->priv_data;
     AVCodecContext *codec;
@@ -396,7 +397,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
     }
 
-    av_set_pts_info(st, 32, 1, 1000);
+    avpriv_set_pts_info(st, 32, 1, 1000);
 
     ctx->mutex = CreateMutex(NULL, 0, NULL);
     if(!ctx->mutex) {

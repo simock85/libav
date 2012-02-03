@@ -26,6 +26,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define RAND_TAG MKBETAG('R','a','n','d')
 
@@ -33,8 +34,7 @@ typedef struct {
     int leading;
 } FilmstripDemuxContext;
 
-static int read_header(AVFormatContext *s,
-                       AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     FilmstripDemuxContext *film = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -67,7 +67,7 @@ static int read_header(AVFormatContext *s,
     st->codec->width      = avio_rb16(pb);
     st->codec->height     = avio_rb16(pb);
     film->leading         = avio_rb16(pb);
-    av_set_pts_info(st, 64, 1, avio_rb16(pb));
+    avpriv_set_pts_info(st, 64, 1, avio_rb16(pb));
 
     avio_seek(pb, 0, SEEK_SET);
 

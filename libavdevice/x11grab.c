@@ -31,12 +31,14 @@
 
 /**
  * @file
- * X11 frame device demuxer by Clemens Fruhwirth <clemens@endorphin.org>
- * and Edouard Gomez <ed.gomez@free.fr>.
+ * X11 frame device demuxer
+ * @author Clemens Fruhwirth <clemens@endorphin.org>
+ * @author Edouard Gomez <ed.gomez@free.fr>
  */
 
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -152,7 +154,7 @@ x11grab_region_win_init(struct x11_grab *s)
  *         </ul>
  */
 static int
-x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
+x11grab_read_header(AVFormatContext *s1)
 {
     struct x11_grab *x11grab = s1->priv_data;
     Display *dpy;
@@ -198,7 +200,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         ret = AVERROR(ENOMEM);
         goto out;
     }
-    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     screen = DefaultScreen(dpy);
 

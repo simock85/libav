@@ -26,6 +26,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct {
     int base_record;
@@ -75,8 +76,7 @@ static int find_record(const AnmDemuxContext *anm, int record)
     return AVERROR_INVALIDDATA;
 }
 
-static int read_header(AVFormatContext *s,
-                       AVFormatParameters *ap)
+static int read_header(AVFormatContext *s)
 {
     AnmDemuxContext *anm = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -128,7 +128,7 @@ static int read_header(AVFormatContext *s,
 
     avio_skip(pb, 32); /* record_types */
     st->nb_frames = avio_rl32(pb);
-    av_set_pts_info(st, 64, 1, avio_rl16(pb));
+    avpriv_set_pts_info(st, 64, 1, avio_rl16(pb));
     avio_skip(pb, 58);
 
     /* color cycling and palette data */
@@ -136,16 +136,16 @@ static int read_header(AVFormatContext *s,
     st->codec->extradata      = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata) {
         ret = AVERROR(ENOMEM);
-        goto close_and_return;
+        goto fail;
     }
     ret = avio_read(pb, st->codec->extradata, st->codec->extradata_size);
     if (ret < 0)
-        goto close_and_return;
+        goto fail;
 
     /* read page table */
     ret = avio_seek(pb, anm->page_table_offset, SEEK_SET);
     if (ret < 0)
-        goto close_and_return;
+        goto fail;
 
     for (i = 0; i < MAX_PAGES; i++) {
         Page *p = &anm->pt[i];
@@ -158,7 +158,7 @@ static int read_header(AVFormatContext *s,
     anm->page = find_record(anm, 0);
     if (anm->page < 0) {
         ret = anm->page;
-        goto close_and_return;
+        goto fail;
     }
 
     anm->record = -1;
@@ -168,8 +168,7 @@ invalid:
     av_log_ask_for_sample(s, NULL);
     ret = AVERROR_INVALIDDATA;
 
-close_and_return:
-    av_close_input_stream(s);
+fail:
     return ret;
 }
 

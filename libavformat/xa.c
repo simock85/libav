@@ -29,6 +29,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define XA00_TAG MKTAG('X', 'A', 0, 0)
 #define XAI0_TAG MKTAG('X', 'A', 'I', 0)
@@ -62,8 +63,7 @@ static int xa_probe(AVProbeData *p)
     return AVPROBE_SCORE_MAX/2;
 }
 
-static int xa_read_header(AVFormatContext *s,
-               AVFormatParameters *ap)
+static int xa_read_header(AVFormatContext *s)
 {
     MaxisXADemuxContext *xa = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -86,7 +86,7 @@ static int xa_read_header(AVFormatContext *s,
     st->codec->block_align  = avio_rl16(pb);
     st->codec->bits_per_coded_sample = avio_rl16(pb);
 
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;
 }

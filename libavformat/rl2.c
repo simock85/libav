@@ -35,6 +35,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define EXTRADATA1_SIZE (6 + 256 * 3) ///< video base, clr, palette
 
@@ -71,8 +72,7 @@ static int rl2_probe(AVProbeData *p)
  * @param ap format parameters
  * @return 0 on success, AVERROR otherwise
  */
-static av_cold int rl2_read_header(AVFormatContext *s,
-                            AVFormatParameters *ap)
+static av_cold int rl2_read_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     AVStream *st;
@@ -153,10 +153,10 @@ static av_cold int rl2_read_header(AVFormatContext *s,
             st->codec->bits_per_coded_sample;
         st->codec->block_align = st->codec->channels *
             st->codec->bits_per_coded_sample / 8;
-        av_set_pts_info(st,32,1,rate);
+        avpriv_set_pts_info(st,32,1,rate);
     }
 
-    av_set_pts_info(s->streams[0], 32, pts_num, pts_den);
+    avpriv_set_pts_info(s->streams[0], 32, pts_num, pts_den);
 
     chunk_size =   av_malloc(frame_count * sizeof(uint32_t));
     audio_size =   av_malloc(frame_count * sizeof(uint32_t));
@@ -294,4 +294,3 @@ AVInputFormat ff_rl2_demuxer = {
     .read_packet    = rl2_read_packet,
     .read_seek      = rl2_read_seek,
 };
-
