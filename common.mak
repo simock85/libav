@@ -19,6 +19,8 @@ TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)%) $(TESTPROGS:%=$(SUBDIR)%-test.o)
 TESTPROGS := $(TESTPROGS:%=$(SUBDIR)%-test$(EXESUF))
 HOSTOBJS  := $(HOSTPROGS:%=$(SUBDIR)%.o)
 HOSTPROGS := $(HOSTPROGS:%=$(SUBDIR)%$(HOSTEXESUF))
+FAROSOB:= $(FAROS:%=faros/%.o)
+FAROS  := $(FAROS:%=faros/%$(EXESUF))
 TOOLS     += $(TOOLS-yes)
 TOOLOBJS  := $(TOOLS:%=tools/%.o)
 TOOLS     := $(TOOLS:%=tools/%$(EXESUF))
@@ -42,6 +44,7 @@ $(OBJS):     | $(sort $(dir $(OBJS)))
 $(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
 $(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
 $(TOOLOBJS): | tools
+%(FAROSOB=: | faros
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS))
 
@@ -49,4 +52,4 @@ CLEANSUFFIXES     = *.d *.o *~ *.ho *.map *.ver
 DISTCLEANSUFFIXES = *.pc
 LIBSUFFIXES       = *.a *.lib *.so *.so.* *.dylib *.dll *.def *.dll.a *.exp
 
--include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d))
+-include $(wildcard $(OBJS:.o=.d) $(TESTOBJS:.o=.d)) $(FAROSOB:.o=.d))

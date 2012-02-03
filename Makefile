@@ -63,7 +63,7 @@ TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
-
+FAROS    = decode
 BASENAMES   = avconv avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
@@ -92,6 +92,11 @@ $(TOOLS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
 
 tools/cws2fws$(EXESUF): ELIBS = -lz
+
+faros/decode$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz -lswscale -llibSDL
+
+$(FAROS): %$(EXESUF): %.o
+	$(LD) $(LDFLAGS) $(SDL_CFLAGS) -o $@ $< $(ELIBS)
 
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))

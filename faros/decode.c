@@ -5,6 +5,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include <SDL.h>
+#include <SDL_thread.h>
+
 static void SaveFrame(AVFrame *frame, int width, int height, int i_frame)
 {
     FILE *file;
@@ -36,11 +39,15 @@ int main (int argc, const char * argv[])
     AVCodecContext *codec_ctx;
     AVCodec *codec;
     AVFrame *frame;
-    AVFrame *frame_RGB;
+    AVFrame *frame_YUV;
     AVPacket packet;
     int frame_finished;
     int num_bytes;
     uint8_t *buffer;
+    SDL_Surface *screen;
+    SDL_Overlay *bmp;
+    SDL_Rect rect;
+
 
     av_register_all();
 
@@ -51,6 +58,11 @@ int main (int argc, const char * argv[])
         return -1;
 
     av_dump_format(format_ctx, 0, argv[1], 0);
+
+    if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER)) {
+        fprintf(stderr, "Could not initialize SDL - %s\n", SDL_GetError());
+        exit(1);
+    }
 
     video_stream=-1;
     for(i=0; i<format_ctx->nb_streams; i++)
@@ -76,17 +88,27 @@ int main (int argc, const char * argv[])
 
     frame=avcodec_alloc_frame();
 
-    frame_RGB=avcodec_alloc_frame();
-    if(frame_RGB==NULL)
+    frame_YUV=avcodec_alloc_frame();
+    if(frame_YUV==NULL)
         return -1;
 
-    num_bytes=avpicture_get_size(PIX_FMT_RGB24, codec_ctx->width,
+    screen = SDL_SetVideoMode(codec_ctx->width, codec_ctx->height, 0, 0);
+    if(!screen) {
+        fprintf(stderr, "SDL: could not set video mode - exiting\n");
+        exit(1);
+    }
+
+    bmp = SDL_CreateYUVOverlay(codec_ctx->width, codec_ctx->height,
+                               SDL_YV12_OVERLAY, screen);
+
+    num_bytes=avpicture_get_size(PIX_FMT_YUV420P, codec_ctx->width,
             codec_ctx->height);
 
     buffer=malloc(num_bytes);
 
-    avpicture_fill((AVPicture *)frame_RGB, buffer, PIX_FMT_RGB24,
+    avpicture_fill((AVPicture *)frame_YUV, buffer, PIX_FMT_YUV420P,
             codec_ctx->width, codec_ctx->height);
+
 
     i=0;
     while(av_read_frame(format_ctx, &packet)>=0)
@@ -105,24 +127,39 @@ int main (int argc, const char * argv[])
 
                     img_convert_ctx = sws_getContext(w, h,
                             codec_ctx->pix_fmt,
-                            w, h, PIX_FMT_RGB24, SWS_BICUBIC,
+                            w, h, PIX_FMT_YUV420P, SWS_BICUBIC,
                             NULL, NULL, NULL);
                     if(img_convert_ctx == NULL) {
                         fprintf(stderr, "Cannot initialize the conversion context!\n");
                         exit(1);
                     }
                 }
-                ret = sws_scale(img_convert_ctx, (const uint8_t* const*)frame->data, frame->linesize, 0,
-                        codec_ctx->height, frame_RGB->data, frame_RGB->linesize);
+                SDL_LockYUVOverlay(bmp);
+                frame_YUV.data[0] = bmp->pixels[0];
+                frame_YUV.data[1] = bmp->pixels[2];
+                frame_YUV.data[2] = bmp->pixels[1];
 
-                SaveFrame(frame_RGB, codec_ctx->width, codec_ctx->height, i++);
+                frame_YUV.linesize[0] = bmp->pitches[0];
+                frame_YUV.linesize[1] = bmp->pitches[2];
+                frame_YUV.linesize[2] = bmp->pitches[1];
+
+                ret = sws_scale(img_convert_ctx, (const uint8_t* const*)frame->data, frame->linesize, 0,
+                        codec_ctx->height, frame_YUV->data, frame_YUV->linesize);
+
+                //SaveFrame(frame_YUV, codec_ctx->width, codec_ctx->height, i++);
+                SDL_UnlockYUVOverlay(bmp);
+                rect.x = 0;
+                rect.y = 0;
+                rect.w = codec_ctx->width;
+                rect.h = codec_ctx->height;
+                SDL_DisplayYUVOverlay(bmp, &rect);
             }
         }
         av_free_packet(&packet);
     }
 
     free(buffer);
-    av_free(frame_RGB);
+    av_free(frame_YUV);
 
     av_free(frame);
 
