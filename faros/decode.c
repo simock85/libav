@@ -8,29 +8,6 @@
 #include <SDL.h>
 #include <SDL_thread.h>
 
-static void SaveFrame(AVFrame *frame, int width, int height, int i_frame)
-{
-    FILE *file;
-    char sz_filename[32];
-    int  y;
-
-    // Open file
-    sprintf(sz_filename, "frame%d.ppm", i_frame);
-    file=fopen(sz_filename, "wb");
-    if(file==NULL)
-        return;
-
-    // Write header
-    fprintf(file, "P6\n%d %d\n255\n", width, height);
-
-    // Write pixel data
-    for(y=0; y<height; y++)
-        fwrite(frame->data[0]+y*frame->linesize[0], 1, width*3, file);
-
-    // Close file
-    fclose(file);
-}
-
 int main (int argc, const char * argv[])
 {
     AVFormatContext *format_ctx=NULL;
@@ -135,18 +112,17 @@ int main (int argc, const char * argv[])
                     }
                 }
                 SDL_LockYUVOverlay(bmp);
-                frame_YUV.data[0] = bmp->pixels[0];
-                frame_YUV.data[1] = bmp->pixels[2];
-                frame_YUV.data[2] = bmp->pixels[1];
+                frame_YUV->data[0] = bmp->pixels[0];
+                frame_YUV->data[1] = bmp->pixels[2];
+                frame_YUV->data[2] = bmp->pixels[1];
 
-                frame_YUV.linesize[0] = bmp->pitches[0];
-                frame_YUV.linesize[1] = bmp->pitches[2];
-                frame_YUV.linesize[2] = bmp->pitches[1];
+                frame_YUV->linesize[0] = bmp->pitches[0];
+                frame_YUV->linesize[1] = bmp->pitches[2];
+                frame_YUV->linesize[2] = bmp->pitches[1];
 
                 ret = sws_scale(img_convert_ctx, (const uint8_t* const*)frame->data, frame->linesize, 0,
                         codec_ctx->height, frame_YUV->data, frame_YUV->linesize);
 
-                //SaveFrame(frame_YUV, codec_ctx->width, codec_ctx->height, i++);
                 SDL_UnlockYUVOverlay(bmp);
                 rect.x = 0;
                 rect.y = 0;

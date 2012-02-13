@@ -93,7 +93,8 @@ $(TOOLS): %$(EXESUF): %.o
 
 tools/cws2fws$(EXESUF): ELIBS = -lz
 
-faros/decode$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz -lswscale -llibSDL
+faros/decode.o: CFLAGS += $(SDL_CFLAGS)
+faros/decode$(EXESUF): ELIBS = -lavformat -lavcodec -lavutil -lm -lpthread -lz -lswscale -lSDL
 
 $(FAROS): %$(EXESUF): %.o
 	$(LD) $(LDFLAGS) $(SDL_CFLAGS) -o $@ $< $(ELIBS)
